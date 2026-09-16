@@ -1,0 +1,51 @@
+{% extends "base.html" %}
+
+{% block title %}Standings | Football Sunday{% endblock %}
+
+{% block content %}
+<main class="page-wrap">
+  <header class="page-title">
+    <p>2026 Season</p>
+    <h1>Standings</h1>
+  </header>
+  <section class="table-panel">
+    <table>
+      <thead>
+        <tr>
+          <th>Rank</th>
+          <th>Team</th>
+          <th>Owner</th>
+          <th>Record</th>
+          <th>Win %</th>
+          <th>PF</th>
+          <th>PA</th>
+          <th>Diff</th>
+          <th>Avg</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for row in rows %}
+        <tr>
+          <td>{{ row.rank }}</td>
+          <td class="team-table-cell">
+            {% if row.team.avatar_thumb_url %}
+              <img src="{{ row.team.avatar_thumb_url }}" alt="" class="table-avatar">
+            {% else %}
+              <span class="table-avatar avatar-fallback">{{ initials(row.team.team_name) }}</span>
+            {% endif %}
+            {{ row.team.team_name }}
+          </td>
+          <td>{{ row.team.owner_name }}</td>
+          <td>{{ row.record }}</td>
+          <td>{{ "%.3f"|format(row.win_pct) }}</td>
+          <td>{{ fmt_points(row.points_for) }}</td>
+          <td>{{ fmt_points(row.points_against) }}</td>
+          <td>{{ fmt_points(row.point_differential) }}</td>
+          <td>{{ fmt_points(row.avg_points_per_week) }}</td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </section>
+</main>
+{% endblock %}

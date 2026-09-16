@@ -1,0 +1,21 @@
+<section class="team-header">
+  {% if weekly_team.team.avatar_thumb_url %}
+    <img class="team-avatar" src="{{ weekly_team.team.avatar_thumb_url }}" alt="">
+  {% else %}
+    <span class="team-avatar avatar-fallback">{{ initials(weekly_team.team.team_name) }}</span>
+  {% endif %}
+  <div class="team-copy">
+    <h2>{{ weekly_team.team.team_name }}</h2>
+    <p>{{ weekly_team.team.owner_name }} · {{ record(weekly_team.team) }}</p>
+  </div>
+  <div class="team-score-stack">
+    <div>
+      <span>Proj</span>
+      <strong>{{ fmt_points(weekly_team.projected_points) }}{% if weekly_team.projected_points is not none and not weekly_team.projection_complete %}*{% endif %}</strong>
+    </div>
+    <div>
+      <span>Actual</span>
+      <strong>{{ fmt_points(weekly_team.actual_points) }}</strong>
+    </div>
+  </div>
+</section>

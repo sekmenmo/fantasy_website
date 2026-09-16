@@ -1,0 +1,44 @@
+<header class="matchup-toolbar">
+  <div class="toolbar-controls">
+    <button
+      type="button"
+      class="icon-button"
+      hx-get="/matchups/content?week={{ previous_week }}&matchup=1"
+      hx-target="#matchup-page-shell"
+      hx-swap="innerHTML"
+      hx-push-url="/matchups?week={{ previous_week }}&matchup=1"
+      aria-label="Previous week">‹</button>
+    <label class="week-select">
+      <span>Week</span>
+      <select name="week" data-week-select>
+        {% for week in weeks %}
+          <option value="{{ week }}" {% if week == selected_week %}selected{% endif %}>{{ week }}</option>
+        {% endfor %}
+      </select>
+    </label>
+    <button
+      type="button"
+      class="icon-button"
+      hx-get="/matchups/content?week={{ next_week }}&matchup=1"
+      hx-target="#matchup-page-shell"
+      hx-swap="innerHTML"
+      hx-push-url="/matchups?week={{ next_week }}&matchup=1"
+      aria-label="Next week">›</button>
+    <label class="podcast-toggle">
+      <input type="checkbox" data-podcast-toggle>
+      <span>Podcast Mode</span>
+    </label>
+    <button
+      type="button"
+      class="refresh-button"
+      hx-post="/matchups/refresh?week={{ selected_week }}&matchup={{ selected_matchup_index }}"
+      hx-target="#matchup-panel-shell"
+      hx-swap="innerHTML"
+      hx-indicator="#refresh-indicator">Refresh</button>
+    <span id="refresh-indicator" class="htmx-indicator">Refreshing...</span>
+  </div>
+</header>
+
+<section id="matchup-panel-shell" class="page-wrap board-wrap">
+  {% include "partials/matchup_panel.html" %}
+</section>
