@@ -25,6 +25,7 @@ class BoardResult:
     board: MatchupBoard
     warning: str | None = None
     last_updated: str | None = None
+    refreshed: bool = False
 
 
 @dataclass
@@ -41,12 +42,14 @@ class DashboardDataService:
 
     async def matchup_board(self, week: int | None = None, *, force_refresh: bool = False) -> BoardResult:
         warning_parts: list[str] = []
+        fresh_keys: set[str] = set()
         nfl_state = await self._cached(
             "sleeper:nfl_state",
             self.client.get_nfl_state,
             ttl_seconds=settings.short_cache_ttl_seconds,
             force_refresh=force_refresh,
             warnings=warning_parts,
+            fresh_keys=fresh_keys,
         )
         selected_week = week or int(nfl_state.get("week") or nfl_state.get("leg") or 1)
         league = await self._cached(
@@ -55,6 +58,7 @@ class DashboardDataService:
             ttl_seconds=settings.short_cache_ttl_seconds,
             force_refresh=force_refresh,
             warnings=warning_parts,
+            fresh_keys=fresh_keys,
         )
         users = await self._cached(
             "sleeper:users",
@@ -62,6 +66,7 @@ class DashboardDataService:
             ttl_seconds=settings.short_cache_ttl_seconds,
             force_refresh=force_refresh,
             warnings=warning_parts,
+            fresh_keys=fresh_keys,
         )
         rosters = await self._cached(
             "sleeper:rosters",
@@ -69,18 +74,21 @@ class DashboardDataService:
             ttl_seconds=settings.short_cache_ttl_seconds,
             force_refresh=force_refresh,
             warnings=warning_parts,
+            fresh_keys=fresh_keys,
         )
+        matchup_cache_key = f"sleeper:matchups:{selected_week}"
         matchups = await self._cached(
-            f"sleeper:matchups:{selected_week}",
+            matchup_cache_key,
             lambda: self.client.get_matchups(settings.league_id, selected_week),
             ttl_seconds=settings.short_cache_ttl_seconds,
             force_refresh=force_refresh,
             warnings=warning_parts,
+            fresh_keys=fresh_keys,
         )
 
         player_service = PlayerMetadataService(self.client, self.cache)
         try:
-            all_players = await player_service.refresh() if force_refresh else await player_service.get_all_players()
+            all_players = await player_service.get_all_players()
         except Exception:
             all_players = self.cache.get_stale(PlayerMetadataService.cache_key) or {}
             if all_players:
@@ -105,15 +113,17 @@ class DashboardDataService:
                 int(league["season"]),
                 selected_week,
                 player_ids,
+                force_refresh=force_refresh,
             )
             projection_records = await projection_provider.get_week_projection_records(
                 int(league["season"]),
                 selected_week,
+                force_refresh=force_refresh,
             )
         except Exception:
             projections = {player_id: None for player_id in player_ids}
             projection_records = []
-            warning_parts.append("Projections are temporarily unavailable.")
+            warning_parts.append("Projections are temporarily unavailable. Scores were refreshed where possible.")
 
         opponents = {str(record.get("player_id")): record.get("opponent") for record in projection_records}
         board = build_matchup_board(
@@ -132,6 +142,7 @@ class DashboardDataService:
             board=board,
             warning=" ".join(dict.fromkeys(warning_parts)) or None,
             last_updated=self._latest_update(selected_week),
+            refreshed=force_refresh and matchup_cache_key in fresh_keys,
         )
 
     async def standings(self) -> list[StandingRow]:
@@ -372,6 +383,7 @@ class DashboardDataService:
         ttl_seconds: int,
         force_refresh: bool,
         warnings: list[str],
+        fresh_keys: set[str] | None = None,
     ) -> Any:
         if not force_refresh:
             cached = self.cache.get(key)
@@ -379,14 +391,22 @@ class DashboardDataService:
                 return cached
         try:
             payload = await fetcher()
-            self.cache.set(key, payload, ttl_seconds=ttl_seconds)
-            return payload
         except Exception:
             stale = self.cache.get_stale(key)
             if stale is not None:
-                warnings.append("Showing cached Sleeper data.")
+                if force_refresh:
+                    warnings.append("Unable to refresh Sleeper right now. Showing existing data.")
+                else:
+                    warnings.append("Showing cached Sleeper data.")
                 return stale
             raise
+        if fresh_keys is not None:
+            fresh_keys.add(key)
+        try:
+            self.cache.set(key, payload, ttl_seconds=ttl_seconds)
+        except Exception:
+            warnings.append("Fresh data loaded, but the local cache could not be updated.")
+        return payload
 
     def _latest_update(self, week: int) -> str | None:
         keys = [

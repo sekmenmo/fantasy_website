@@ -60,7 +60,13 @@ def resolve_week(week: int | None) -> int | None:
     return min(18, max(1, week))
 
 
-def board_context(request: Request, result: BoardResult, matchup: int | None = None) -> dict:
+def board_context(
+    request: Request,
+    result: BoardResult,
+    matchup: int | None = None,
+    *,
+    refresh_notice: str | None = None,
+) -> dict:
     board = result.board
     current_week = board.week
     matchup_count = len(board.matchups)
@@ -75,6 +81,7 @@ def board_context(request: Request, result: BoardResult, matchup: int | None = N
         "previous_matchup": wrapped_neighbor(selected_matchup_index, matchup_count, -1),
         "next_matchup": wrapped_neighbor(selected_matchup_index, matchup_count, 1),
         "warning": result.warning,
+        "refresh_notice": refresh_notice,
         "last_updated": result.last_updated,
         "selected_week": current_week,
         "weeks": range(1, 19),
@@ -107,8 +114,11 @@ async def matchups(
                 "board": None,
                 "error": "No usable Sleeper data is available yet.",
                 "selected_week": resolve_week(week) or 1,
+                "week": resolve_week(week) or 1,
+                "matchup": matchup,
                 "weeks": range(1, 19),
                 "active_page": "matchups",
+                "retry_target": "#matchup-page-shell",
             },
         )
 
@@ -130,6 +140,8 @@ async def matchup_content_partial(
                 "request": request,
                 "message": "Could not load that week. Try Refresh.",
                 "week": resolve_week(week) or 1,
+                "matchup": matchup,
+                "retry_target": "#matchup-page-shell",
             },
         )
 
@@ -160,6 +172,7 @@ async def matchup_panel_partial(
                 "request": request,
                 "message": "Could not load that week. Try Refresh.",
                 "week": resolve_week(week) or 1,
+                "matchup": matchup,
             },
         )
 
@@ -170,17 +183,24 @@ async def refresh_matchups(
     week: int = Query(default=1),
     matchup: int = Query(default=1),
 ) -> HTMLResponse:
+    resolved_week = resolve_week(week) or 1
     try:
-        result = await data_service_factory().matchup_board(resolve_week(week), force_refresh=True)
-        return templates.TemplateResponse(request, "partials/matchup_panel.html", board_context(request, result, matchup))
+        result = await data_service_factory().matchup_board(resolved_week, force_refresh=True)
+        notice = "Scores refreshed" if result.refreshed else None
+        return templates.TemplateResponse(
+            request,
+            "partials/matchup_panel.html",
+            board_context(request, result, matchup, refresh_notice=notice),
+        )
     except Exception:
         return templates.TemplateResponse(
             request,
             "partials/error_banner.html",
             {
                 "request": request,
-                "message": "Refresh failed and no cached board could be rendered.",
-                "week": resolve_week(week) or 1,
+                "message": "Unable to refresh Sleeper right now. Showing existing data.",
+                "week": resolved_week,
+                "matchup": matchup,
             },
         )
 

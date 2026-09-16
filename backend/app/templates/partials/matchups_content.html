@@ -34,7 +34,9 @@
       hx-post="/matchups/refresh?week={{ selected_week }}&matchup={{ selected_matchup_index }}"
       hx-target="#matchup-panel-shell"
       hx-swap="innerHTML"
-      hx-indicator="#refresh-indicator">Refresh</button>
+      hx-indicator="#refresh-indicator"
+      hx-disabled-elt="this"
+      hx-sync="this:drop"><span aria-hidden="true">↻</span> Refresh Scores</button>
     <span id="refresh-indicator" class="htmx-indicator">Refreshing...</span>
   </div>
 </header>

@@ -2,6 +2,10 @@
   {% include "partials/error_banner.html" with context %}
 {% endif %}
 
+{% if refresh_notice %}
+  <div class="refresh-feedback" role="status">{{ refresh_notice }}</div>
+{% endif %}
+
 {% if selected_matchup %}
 <section class="matchup-switcher" data-week="{{ selected_week }}" data-matchup="{{ selected_matchup_index }}">
   <button

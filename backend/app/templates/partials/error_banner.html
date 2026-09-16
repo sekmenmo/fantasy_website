@@ -6,8 +6,10 @@
   {% if week %}
     <button
       type="button"
-      hx-post="/matchups/refresh?week={{ week }}"
-      hx-target="#matchup-page-shell"
-      hx-swap="innerHTML">Retry</button>
+      hx-post="/matchups/refresh?week={{ week }}{% if matchup %}&matchup={{ matchup }}{% endif %}"
+      hx-target="{{ retry_target or '#matchup-panel-shell' }}"
+      hx-swap="innerHTML"
+      hx-disabled-elt="this"
+      hx-sync="this:drop">Retry</button>
   {% endif %}
 </section>

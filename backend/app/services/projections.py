@@ -25,6 +25,8 @@ class ProjectionProvider(ABC):
         season: int,
         week: int,
         player_ids: list[str],
+        *,
+        force_refresh: bool = False,
     ) -> dict[str, float | None]:
         raise NotImplementedError
 
@@ -35,6 +37,8 @@ class NullProjectionProvider(ProjectionProvider):
         season: int,
         week: int,
         player_ids: list[str],
+        *,
+        force_refresh: bool = False,
     ) -> dict[str, float | None]:
         return {player_id: None for player_id in player_ids}
 
@@ -56,17 +60,15 @@ class SleeperProjectionProvider(ProjectionProvider):
         season: int,
         week: int,
         player_ids: list[str],
+        *,
+        force_refresh: bool = False,
     ) -> dict[str, float | None]:
         wanted = {player_id for player_id in player_ids if player_id and player_id != "0"}
         projections = {player_id: None for player_id in player_ids}
         if not wanted:
             return projections
 
-        cache_key = f"projections:nfl:{season}:{week}:{self.stat_key}"
-        records = self.cache.get(cache_key)
-        if records is None:
-            records = await self._fetch_week(season, week)
-            self.cache.set(cache_key, records, ttl_seconds=settings.short_cache_ttl_seconds)
+        records = await self._get_week_records(season, week, force_refresh=force_refresh)
 
         for record in records:
             player_id = str(record.get("player_id", ""))
@@ -77,12 +79,32 @@ class SleeperProjectionProvider(ProjectionProvider):
             projections[player_id] = float(value) if value is not None else None
         return projections
 
-    async def get_week_projection_records(self, season: int, week: int) -> list[dict[str, Any]]:
+    async def get_week_projection_records(
+        self,
+        season: int,
+        week: int,
+        *,
+        force_refresh: bool = False,
+    ) -> list[dict[str, Any]]:
+        return await self._get_week_records(season, week, force_refresh=force_refresh)
+
+    async def _get_week_records(self, season: int, week: int, *, force_refresh: bool) -> list[dict[str, Any]]:
         cache_key = f"projections:nfl:{season}:{week}:{self.stat_key}"
-        records = self.cache.get(cache_key)
-        if records is None:
+        if not force_refresh:
+            records = self.cache.get(cache_key)
+            if records is not None:
+                return records
+        try:
             records = await self._fetch_week(season, week)
+        except Exception:
+            stale = self.cache.get_stale(cache_key)
+            if stale is not None:
+                return stale
+            raise
+        try:
             self.cache.set(cache_key, records, ttl_seconds=settings.short_cache_ttl_seconds)
+        except Exception:
+            pass
         return records
 
     async def _fetch_week(self, season: int, week: int) -> list[dict[str, Any]]:

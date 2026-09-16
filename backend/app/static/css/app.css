@@ -137,6 +137,18 @@ a:focus-visible {
   font-weight: 700;
 }
 
+.refresh-button {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  color: var(--text-soft);
+}
+
+.refresh-button[disabled] {
+  cursor: wait;
+  opacity: 0.72;
+}
+
 .icon-button:hover,
 .refresh-button:hover,
 .matchup-arrow:hover,
@@ -170,6 +182,24 @@ a:focus-visible {
 
 .htmx-indicator { display: none; color: var(--orange); font-size: 13px; font-weight: 900; }
 .htmx-request .htmx-indicator, .htmx-request.htmx-indicator { display: inline; }
+
+.refresh-feedback {
+  width: fit-content;
+  margin: 0 auto 10px;
+  padding: 6px 10px;
+  border: 1px solid rgba(118, 89, 245, 0.45);
+  border-radius: var(--radius-small);
+  background: rgba(118, 89, 245, 0.16);
+  color: var(--text-soft);
+  font-size: 12px;
+  font-weight: 800;
+  animation: fade-refresh-feedback 4s ease forwards;
+}
+
+@keyframes fade-refresh-feedback {
+  0%, 70% { opacity: 1; }
+  100% { opacity: 0; visibility: hidden; }
+}
 
 .matchup-switcher {
   display: grid;

@@ -79,7 +79,12 @@ def fake_board(week=2):
 
 class FakeService:
     async def matchup_board(self, week=None, force_refresh=False):
-        return BoardResult(board=fake_board(week or 2), warning=None, last_updated="2026-09-16 12:00")
+        return BoardResult(
+            board=fake_board(week or 2),
+            warning=None,
+            last_updated="2026-09-16 12:00",
+            refreshed=force_refresh,
+        )
 
     async def standings(self):
         return []
@@ -144,6 +149,9 @@ def test_matchups_route_returns_html(monkeypatch):
     assert "Pass Thrower" in response.text
     assert "Empty Slot" in response.text
     assert "Collapse Bench" in response.text
+    assert "Refresh Scores" in response.text
+    assert 'hx-disabled-elt="this"' in response.text
+    assert 'hx-sync="this:drop"' in response.text
     assert "2026 Season" not in response.text
     assert "Updated 2026-09-16" not in response.text
 
@@ -155,6 +163,36 @@ def test_matchup_partial_route_returns_board(monkeypatch):
     assert response.status_code == 200
     assert "matchup-card" in response.text
     assert "2 of 2" in response.text
+
+
+def test_refresh_endpoint_returns_current_matchup_without_redirect(monkeypatch):
+    calls = []
+
+    class RecordingService(FakeService):
+        async def matchup_board(self, week=None, force_refresh=False):
+            calls.append((week, force_refresh))
+            return await super().matchup_board(week, force_refresh)
+
+    monkeypatch.setattr(web_routes, "data_service_factory", RecordingService)
+    client = TestClient(app)
+    response = client.post("/matchups/refresh?week=2&matchup=2")
+
+    assert response.status_code == 200
+    assert calls == [(2, True)]
+    assert "Scores refreshed" in response.text
+    assert 'data-week="2" data-matchup="2"' in response.text
+    assert "2 of 2" in response.text
+    assert "Refresh Scores" not in response.text
+
+
+def test_refresh_endpoint_preserves_invalid_matchup_gracefully(monkeypatch):
+    monkeypatch.setattr(web_routes, "data_service_factory", FakeService)
+    client = TestClient(app)
+    response = client.post("/matchups/refresh?week=2&matchup=99")
+
+    assert response.status_code == 200
+    assert "matchup-card" in response.text
+    assert "1 of 2" in response.text
 
 
 def test_direct_url_selects_correct_week_dropdown(monkeypatch):
