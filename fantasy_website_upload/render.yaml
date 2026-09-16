@@ -1,0 +1,22 @@
+services:
+  - type: web
+    name: fantasy-broadcast-dashboard
+    runtime: python
+    buildCommand: pip install -r backend/requirements.txt
+    startCommand: uvicorn app.main:app --app-dir backend --host 0.0.0.0 --port $PORT
+    envVars:
+      - key: APP_ENV
+        value: production
+      - key: APP_NAME
+        value: Fantasy Broadcast Dashboard
+      - key: LEAGUE_ID
+        value: "1393359396699930624"
+      - key: DATABASE_URL
+        fromDatabase:
+          name: fantasy-dashboard-db
+          property: connectionString
+
+databases:
+  - name: fantasy-dashboard-db
+    databaseName: fantasy_dashboard
+    user: fantasy_dashboard

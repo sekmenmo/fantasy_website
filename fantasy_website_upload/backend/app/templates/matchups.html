@@ -1,0 +1,15 @@
+{% extends "base.html" %}
+
+{% block title %}Matchups | Football Sunday{% endblock %}
+
+{% block content %}
+  {% if error %}
+    <main class="page-wrap">
+      {% include "partials/error_banner.html" with context %}
+    </main>
+  {% else %}
+    <main id="matchup-page-shell">
+      {% include "partials/matchups_content.html" %}
+    </main>
+  {% endif %}
+{% endblock %}

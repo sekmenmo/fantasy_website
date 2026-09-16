@@ -1,0 +1,17 @@
+<div class="player-side player-side-left">
+  {% set player_row = left %}
+  {% if player_row.is_empty %}
+    {% include "partials/empty_player_slot.html" %}
+  {% else %}
+    {% include "partials/player_summary.html" %}
+  {% endif %}
+</div>
+<div class="slot-cell">{{ left.roster_slot }}</div>
+<div class="player-side player-side-right">
+  {% set player_row = right %}
+  {% if player_row.is_empty %}
+    {% include "partials/empty_player_slot.html" %}
+  {% else %}
+    {% include "partials/player_summary.html" %}
+  {% endif %}
+</div>

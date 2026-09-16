@@ -1,0 +1,25 @@
+<div class="player-media" data-initials="{{ initials(player_row.player.full_name) }}">
+  {% if player_row.player.image_url %}
+    <img class="player-photo" src="{{ player_row.player.image_url }}" alt="">
+  {% endif %}
+  <span class="player-fallback">{{ initials(player_row.player.full_name) }}</span>
+</div>
+<div class="player-main">
+  <strong>{{ player_row.player.full_name }}</strong>
+  <span>
+    {{ player_row.player.position or "?" }}
+    {% if player_row.player.nfl_team %} · {{ player_row.player.nfl_team }}{% endif %}
+    {% if player_row.opponent %} vs {{ player_row.opponent }}{% endif %}
+  </span>
+  {% if player_row.player.injury_status %}
+    <em>{{ player_row.player.injury_status }}</em>
+  {% endif %}
+</div>
+<div class="player-points">
+  <span>PROJ <strong>{{ fmt_points(player_row.projected_points) }}</strong></span>
+  <span>PTS <strong>{{ fmt_points(player_row.actual_points) }}</strong></span>
+  {% if player_row.projected_points is not none and player_row.actual_points is not none %}
+    {% set diff = player_row.actual_points - player_row.projected_points %}
+    <small class="{{ 'positive' if diff >= 0 else 'negative' }}">{{ "%+.1f"|format(diff) }}</small>
+  {% endif %}
+</div>

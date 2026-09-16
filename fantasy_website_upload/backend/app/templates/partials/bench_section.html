@@ -1,0 +1,12 @@
+<section class="bench-section">
+  <h3>{{ weekly_team.team.team_name }} Bench</h3>
+  <div class="bench-list">
+    {% for player_row in weekly_team.bench %}
+      <div class="bench-row">
+        {% include "partials/player_summary.html" %}
+      </div>
+    {% else %}
+      <p class="bench-empty">No bench players.</p>
+    {% endfor %}
+  </div>
+</section>

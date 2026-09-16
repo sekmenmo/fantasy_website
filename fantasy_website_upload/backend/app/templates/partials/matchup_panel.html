@@ -1,0 +1,33 @@
+{% if warning %}
+  {% include "partials/error_banner.html" with context %}
+{% endif %}
+
+{% if selected_matchup %}
+<section class="matchup-switcher" data-week="{{ selected_week }}" data-matchup="{{ selected_matchup_index }}">
+  <button
+    type="button"
+    class="matchup-arrow"
+    hx-get="/matchups/panel?week={{ selected_week }}&matchup={{ previous_matchup }}"
+    hx-target="#matchup-panel-shell"
+    hx-swap="innerHTML"
+    hx-push-url="/matchups?week={{ selected_week }}&matchup={{ previous_matchup }}"
+    aria-label="Previous matchup">←</button>
+  <div class="matchup-counter">
+    <span>Matchup</span>
+    <strong>{{ selected_matchup_index }} of {{ matchup_count }}</strong>
+  </div>
+  <button
+    type="button"
+    class="matchup-arrow"
+    hx-get="/matchups/panel?week={{ selected_week }}&matchup={{ next_matchup }}"
+    hx-target="#matchup-panel-shell"
+    hx-swap="innerHTML"
+    hx-push-url="/matchups?week={{ selected_week }}&matchup={{ next_matchup }}"
+    aria-label="Next matchup">→</button>
+</section>
+
+{% set matchup = selected_matchup %}
+{% include "partials/matchup_card.html" %}
+{% else %}
+  <section class="error-banner"><strong>No matchup is available for this week.</strong></section>
+{% endif %}
